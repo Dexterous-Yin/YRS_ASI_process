@@ -84,19 +84,22 @@ else
 end
 
 % initialize the matrices of time, zenith angle, and aurora data
-time_spec = zeros(1,length(asidir));
+data_num = ceil((datenum(pickrange(2,:))-datenum(pickrange(1,:)))/(10/60/60/24)+1);
+time_spec = zeros(1,data_num);
 theta_spec = [-90:1:90]; % zenith angle %degrees
-radiance_spec = zeros(length(theta_spec),length(asidir));
+radiance_spec = zeros(length(theta_spec),data_num);
 
 grid_x = 1:512;
 grid_y = 1:512;
 [X,Y] = meshgrid(grid_x,grid_y);
 
-for tid=1:length(asidir)
-    [Image,Date,Time,Tag,Exposure]=OpenImg2Ray([asidir(tid).folder,'\',asidir(tid).name]);
-    time_spec(tid) = datenum([Date,'/',Time],tformat);
-    disp(['Read Data ',asidir(tid).name(end-7:end-4),' - ',Date,'/',Time]);
+tid=1;
+j=1;
+while j<=length(asidir)
+    [Image,Date,Time,Tag,Exposure]=OpenImg2Ray([asidir(j).folder,'\',asidir(j).name]);
+    disp(['Read Data ',asidir(j).name(end-7:end-4),' - ',Date,'/',Time]);
     if datenum([Date,'/',Time],tformat)>=datenum(pickrange(1,:),tformat) && datenum([Date,'/',Time],tformat)<=datenum(pickrange(2,:),tformat) %abs(datenum([Date,'/',Time],tformat)-datenum(maxlat_time{i},tformat))<=10/60/24
+        time_spec(tid) = datenum([Date,'/',Time],tformat);
         for thetai = 1:length(theta_spec)
             temp_zeith = abs(theta_spec(thetai));
             if theta_spec(thetai)>0
@@ -111,8 +114,14 @@ for tid=1:length(asidir)
             tempradiance = interp2(X,Y,Image,pixel_x,pixel_y);
             radiance_spec(thetai,tid) = tempradiance;
         end
+        tid=tid+1;
     end
     clear Image
+    if datenum([Date,'/',Time],tformat)-datenum(pickrange(1,:),tformat)<-5/60/24
+        j=j+30;
+    else
+        j=j+1;
+    end
     if datenum([Date,'/',Time],tformat)-datenum(pickrange(2,:),tformat)>1/60/24
         break
     end
